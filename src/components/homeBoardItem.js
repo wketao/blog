@@ -19,11 +19,20 @@ const BoardName = styled.div`
   font-weight: 500;
 `;
 
+const ShadowWrapper = styled.div`
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+`;
+
 
 function HomeBoardItem(props) {
   return (
-    <BoardLiItem>
-      <BoardName>BoardName</BoardName>
+    <BoardLiItem style={{background: props.item.color}}>
+      <BoardName>{props.item.name}</BoardName>
+      <ShadowWrapper></ShadowWrapper>
     </BoardLiItem>
   );
 }

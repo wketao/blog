@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Icon } from 'antd';
+import { Icon, Button } from 'antd';
 import styled from 'styled-components';
 
 const ShadowWrapper = styled.div`
@@ -13,9 +13,12 @@ const ShadowWrapper = styled.div`
   left: 0;
 `;
 
+const BboardWrapper = styled.div`
+  display: flex;
+`;
+
 const AddBoardWrapper = styled.div`
   width: 400px;
-  display: flex;
   margin: 40px auto;
 `;
 
@@ -119,6 +122,20 @@ const ColorSelect = {
   9: 'rgb(131, 140, 145)'
 };
 
+
+const BtnBboardWrapper = styled.div`
+  button{
+    background-color: rgb(81, 152, 57);
+    border-color: rgb(81, 152, 57);
+    &:hover,
+    &:focus,
+    &:active{
+      background-color: rgb(100, 175, 74);
+      border-color: rgb(100, 175, 74);
+    }
+  }
+`;
+
 export const AddProjectBtn = styled.div`
   display: block;
   width: 50px;
@@ -136,35 +153,46 @@ export const AddProjectBtn = styled.div`
   font-size: 18px;
 `;
 
-function addBoardWrapper(colorStyle, changeBoardColorStyle, closeShadowWrapper) {
+
+function addBoardWrapper(params) {
   return (
-    <ShadowWrapper onClick={closeShadowWrapper}>
+    <ShadowWrapper onClick={params.toggleBoardWrapper}>
+
       <AddBoardWrapper onClick={(e) => {
         e.stopPropagation();
       }}>
-        <BoardLefItem style={{background: ColorSelect[colorStyle]}}>
-          <input type="text" placeholder="添加看板标题"/>
-          <button>
-            <i className="iconfont icon-guanbi"></i>
-          </button>
-        </BoardLefItem>
-        <BoardRightColorSelect>
-          {
-            Object.keys(ColorSelect).map(function (key) {
-              return (
-                <li style={{background: ColorSelect[key]}} key={ColorSelect[key]}
-                    onClick={() => {
-                      changeBoardColorStyle(key);
-                    }}>
-                  {key === colorStyle.toString() && <Icon type="check" className="iconCheck"/>}
+        <BboardWrapper>
+          <BoardLefItem style={{background: ColorSelect[params.colorStyle]}}>
+            <input type="text" placeholder="添加看板标题" value={params.inputValue} onChange={params.inputChange}
+                   onKeyUp={params.handleInputKeyUp}/>
+            <button>
+              <i className="iconfont icon-guanbi"></i>
+            </button>
+          </BoardLefItem>
+          <BoardRightColorSelect>
+            {
+              Object.keys(ColorSelect).map(function (key) {
+                return (
+                  <li style={{background: ColorSelect[key]}} key={ColorSelect[key]}
+                      onClick={() => {
+                        params.changeBoardColorStyle(key);
+                      }}>
+                    {key === params.colorStyle.toString() && <Icon type="check" className="iconCheck"/>}
+                  </li>
+                );
+              })
+            }
 
-                </li>
-              );
-            })
-          }
-
-        </BoardRightColorSelect>
+          </BoardRightColorSelect>
+        </BboardWrapper>
+        <BtnBboardWrapper>
+          {/*disabled*/}
+          <Button type="primary" disabled={!params.inputValue} onClick={() => {
+            params.addBoardItem();
+          }}>创建看板</Button>
+        </BtnBboardWrapper>
       </AddBoardWrapper>
+
     </ShadowWrapper>
   );
 }
@@ -174,33 +202,73 @@ class AddBoardItem extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      inputValue: '',
       visible: false,
       colorStyle: 1,
     };
-    this.showBoardWrapper = this.showBoardWrapper.bind(this);
+
+    this.toggleBoardWrapper = this.toggleBoardWrapper.bind(this);
+    this.inputChange = this.inputChange.bind(this);
     this.changeBoardColorStyle = this.changeBoardColorStyle.bind(this);
-    this.closeShadowWrapper = this.closeShadowWrapper.bind(this);
+    this.handleInputKeyUp = this.handleInputKeyUp.bind(this);
+    this.addBoardItem = this.addBoardItem.bind(this);
+
   }
 
   render() {
+    let componentsParams = {
+      inputValue: this.state.inputValue,
+      colorStyle: this.state.colorStyle,
+      inputChange: this.inputChange,
+      changeBoardColorStyle: this.changeBoardColorStyle,
+      addBoardItem: this.addBoardItem,
+      handleInputKeyUp: this.handleInputKeyUp,
+      toggleBoardWrapper: () => {
+        this.toggleBoardWrapper(false);
+      }
+    };
     return (
       <>
-        <AddProjectBtn className='iconfont icon-jia' onClick={this.showBoardWrapper}/>
-        {this.state.visible &&
-        addBoardWrapper(this.state.colorStyle, this.changeBoardColorStyle, this.closeShadowWrapper)}
+        <AddProjectBtn className='iconfont icon-jia' onClick={() => {
+          this.toggleBoardWrapper(true);
+        }}/>
+        {
+          this.state.visible &&
+          addBoardWrapper(componentsParams)
+        }
       </>
     );
   }
 
-  closeShadowWrapper() {
+  /**
+   * 控制看板显示隐藏
+   * @param flag
+   */
+  toggleBoardWrapper(flag) {
     this.setState(() => {
       return {
-        visible: false
+        visible: flag
       };
     });
   }
 
+  /**
+   * 监听input的change事件
+   * @param e 事件源
+   */
+  inputChange(e) {
+    let inputValue = e.target.value;
+    this.setState(() => {
+      return {
+        inputValue
+      };
+    });
+  }
 
+  /**
+   * 改变新增看板的颜色
+   * @param colorStyle
+   */
   changeBoardColorStyle(colorStyle) {
     this.setState(() => {
       return {
@@ -209,12 +277,30 @@ class AddBoardItem extends Component {
     });
   }
 
-  showBoardWrapper() {
+  /**
+   * 添加看板
+   */
+  addBoardItem() {
+    let inputValue = this.state.inputValue;
+    this.props.onSubmit({
+      id: Math.ceil(Math.random() * 1000000),
+      name: inputValue,
+      color: ColorSelect[this.state.colorStyle]
+    });
     this.setState(() => {
       return {
-        visible: true
+        inputValue: '',
+        visible: false,
       };
     });
+  }
+
+  /**
+   * 处理键盘Enter事件
+   * @param e
+   */
+  handleInputKeyUp(e) {
+    e.keyCode === 13 && this.addBoardItem();
   }
 }
 

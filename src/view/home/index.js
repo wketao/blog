@@ -7,10 +7,13 @@ class Home extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      addProject: {
-        visible: true
-      }
+      boardList: [{
+        id: 1,
+        name: 'First Board',
+        color: 'rgb(75, 191, 107)',
+      }],
     };
+    this.addBoard = this.addBoard.bind(this);
   }
 
   render() {
@@ -19,13 +22,28 @@ class Home extends Component {
         <BoardWrapper>
           <div className="header">我的看板</div>
           <ul className="list">
-            <BoardLiItem></BoardLiItem>
-            <BoardLiItem></BoardLiItem>
+            {
+              this.state.boardList.map((val) => {
+                return (
+                  <BoardLiItem item={val} key={val.id}></BoardLiItem>
+                );
+              })
+            }
           </ul>
         </BoardWrapper>
-        <AddBoardItem/>
+        <AddBoardItem onSubmit={this.addBoard}/>
       </HomeWrapper>
     );
+  }
+
+  addBoard(itemVal) {
+    this.setState((state) => {
+      return {
+        boardList: [...state.boardList, itemVal]
+      };
+    }, () => {
+      console.log(this.state.boardList);
+    });
   }
 }
 
