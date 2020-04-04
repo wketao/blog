@@ -5,3 +5,6 @@
 
 - 2020-03-23 23:58:00
     - 创建了blog-vue这个仓库，并且初始化了项目。看了一下github api的接口，有必要了解一下，会写个如何使用github api的学习笔记 。
+
+- 2020-04-04 22:13:00
+    - blog-vue 做完了，在清明假期放假第一天，把blog剩下的东西都做了，包括nginx的，在安装nginx的时候，踩了一些坑，花了大概2个小时研究了下，算是解决了，原来是路劲的问题，害我重装了2次系统。还需要花时间解决一下，调优问题，还有about me、timeline目录没做。blog-vue地址：[http://blog.caixusheng.com](http://blog.caixusheng.com)
