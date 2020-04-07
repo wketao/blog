@@ -1,8 +1,14 @@
 # 💻里程碑
 
+##### 2020-04-07 22:52:00
+
+- 今天把timeline页面做了，做这个timeline的时候，调用github的接口会报跨域问题的错误，后来发现调用错接口了，然后在花在解密的时间上比较多，再后来根本就不用解密，官方有文档。
+
+- 由于我的阿里云服务器是国内的，访问github很不稳定，然后我就用了now.sh来部署，速度相对来说还过得去。blog-vue地址：[https://aisen60.now.sh](https://aisen60.now.sh)
+
 ##### 2020-04-04 22:13:00
 
-- blog-vue 做完了，在清明假期放假第一天，把blog剩下的东西都做了，包括nginx的，在安装nginx的时候，踩了一些坑，花了大概2个小时研究了下，算是解决了，原来是路劲的问题，害我重装了2次系统。还需要花时间解决一下，调优问题，还有about me、timeline目录没做。blog-vue地址：[http://blog.caixusheng.com](http://blog.caixusheng.com)
+- blog-vue 做完了，在清明假期放假第一天，把blog剩下的东西都做了，包括nginx的，在安装nginx的时候，踩了一些坑，花了大概2个小时研究了下，算是解决了，原来是路劲的问题，害我重装了2次系统。还需要花时间解决一下，调优问题，还有about me、timeline目录没做。。~~blog-vue地址：[http://blog.caixusheng.com](http://blog.caixusheng.com)。~~
 
 ##### 2020-03-23 23:58:00
 
