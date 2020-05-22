@@ -1,5 +1,9 @@
 # 💻里程碑
 
+##### 2020-05-2 15:03:00
+- 添加了 [TypeScript 学习笔记
+](https://github.com/Aisen60/blog/issues/8)。
+
 ##### 2020-05-16 01:08:00
 - 添加了 [ECMAScript 新特性学习笔记
 ](https://github.com/Aisen60/blog/issues/7)。
