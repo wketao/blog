@@ -1,7 +1,8 @@
 # 💻里程碑
 
-##### 2020-05-08 22:30:00
-- 添加了 [vue keep-alive 移动端返回到指定位置](https://github.com/Aisen60/blog/issues/6)。
+##### 2020-05-16 01:08:00
+- 添加了 [ECMAScript 新特性学习笔记
+](https://github.com/Aisen60/blog/issues/7)。
 
 ##### 2020-04-19 14:00:00
 - 添加了 [我对git分支流程的使用](https://github.com/Aisen60/blog/issues/5)。
