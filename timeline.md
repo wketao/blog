@@ -3,6 +3,7 @@
 ##### 2020-05-25 23:19:00
 - 添加了 [函数式编程范式 学习笔记
 ](https://github.com/Aisen60/blog/issues/9)。
+- update posts page ul tag style.
 
 ##### 2020-05-24 13:51:00
 - 加了一个新的功能，获取一个issues下的所有的评论。然后把markdown-it-vue换成了markdown-it。
