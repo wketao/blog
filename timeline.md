@@ -1,5 +1,8 @@
 # 💻里程碑
 
+##### 2020-06-06 15:35:00
+- 完善了 [JavaScript性能优化](https://github.com/Aisen60/blog/issues/10)。
+
 ##### 2020-06-06 14:07:00
 - 添加了 [JavaScript性能优化](https://github.com/Aisen60/blog/issues/10)。
 
