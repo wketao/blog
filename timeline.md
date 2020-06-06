@@ -1,27 +1,26 @@
 # 💻里程碑
 
+##### 2020-06-06 14:07:00
+- 添加了 [JavaScript性能优化](https://github.com/Aisen60/blog/issues/10)。
+
 ##### 2020-05-30 14:00:00
-- 完善了 [函数式编程范式 学习笔记
-](https://github.com/Aisen60/blog/issues/9)。
+- 完善了 [函数式编程范式 学习笔记](https://github.com/Aisen60/blog/issues/9)。
 
 ##### 2020-05-29 16:02:00
 - 完善了 [我在写blog的时候用到的github api接口](https://github.com/Aisen60/blog/issues/4)。
 
 ##### 2020-05-25 23:19:00
-- 添加了 [函数式编程范式 学习笔记
-](https://github.com/Aisen60/blog/issues/9)。
+- 添加了 [函数式编程范式 学习笔记](https://github.com/Aisen60/blog/issues/9)。
 - update posts page ul tag style.
 
 ##### 2020-05-24 13:51:00
 - 加了一个新的功能，获取一个issues下的所有的评论。然后把markdown-it-vue换成了markdown-it。
 
 ##### 2020-05-23 15:03:00
-- 添加了 [TypeScript 学习笔记
-](https://github.com/Aisen60/blog/issues/8)。
+- 添加了 [TypeScript 学习笔记](https://github.com/Aisen60/blog/issues/8)。
 
 ##### 2020-05-16 01:08:00
-- 添加了 [ECMAScript 新特性学习笔记
-](https://github.com/Aisen60/blog/issues/7)。
+- 添加了 [ECMAScript 新特性学习笔记](https://github.com/Aisen60/blog/issues/7)。
 
 ##### 2020-04-19 14:00:00
 - 添加了 [我对git分支流程的使用](https://github.com/Aisen60/blog/issues/5)。
