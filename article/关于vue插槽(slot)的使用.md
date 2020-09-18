@@ -1,3 +1,11 @@
+<iframe 
+    frameborder="no" border="0" marginwidth="0" 
+    marginheight="0" width=100% height=86 
+    src="//music.163.com/outchain/player?type=2&id=1384570117&auto=0&height=66">
+</iframe>
+
+<hr />
+
 最近在做公司业务，在封装一个公用的弹框，就用到了插槽，但是插槽好久没用了，就忘记了它是怎么用的，写一篇笔记来记录一下它的用法。
 
 ### 插槽是什么
