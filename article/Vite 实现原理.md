@@ -91,4 +91,134 @@
 - 按需编译
 - 开箱即用
 
+# 实现一个简易版的 vite
+
+接下来，我们来实现一个简易版本的 vite，来深入理解 `vite` 的工作原理，分为以下五个步骤：
+
+- 静态 web 服务器
+- 修改第三方模块的路径
+- 加载第三方模块
+- 编译单文件组件
+- HMR（通过 WebSocket 实现，跳过）
+
+## 静态 web 服务器
+
+`vite` 内部使用过的是 `koa` 来开启静态服务器的，这里我们也使用 `koa` 来开启一个静态服务器，把当前运行的目录作为静态服务器的根目录
+
+创建一个名为 `vite-cli` 的空文件夹，进入该文件夹初始化 `package.json`，并且安装 `koa` 和 `koa-send`
+
+```shell
+mkdir vite-cli
+cd vite-cli
+npm init --yes
+npm i koa koa-send
+```
+
+在 `package.json` 来配置 bin 字段：
+
+```javascript
+"bin": "index.js",
+```
+
+新建 index.js 文件，并且在第一行配置 node 的运行环境（因为我们要开发的是一个基于 node 的命令行工具，所以要指定运行 node 的位置）
+
+```javascript
+#!/usr/bin/env node
+
+```
+
+接下来，基于 `koa` 启动一个 web 静态服务器：
+
+```javascript
+#!/usr/bin/env node
+const Koa = require("koa");
+const send = require("koa-send");
+
+const app = new Koa();
+
+// 1.开启静态文件服务器
+app.use(async (ctx, next) => {
+  await send(ctx, ctx.path, { root: process.cwd(), index: "index.html" });
+  next();
+});
+
+app.listen(3000);
+console.log("Serve running @ http://localhost:3000");
+```
+
+接着，使用 `npm link` 到全局，然后打开一个使用 vue3 写的项目（可以用 `vite` 创建一个默认项目），进入命令行终端，输入 `vite-cli`。如果没有报错的话，会打印出"Serve running @ http://localhost:3000"这句话，我们打开浏览器，打开这个网址。
+
+不过是一片空白的，接着我们打开 F12，会看到一个报错，报错的信息的意思是，解析 vue 模块的时候失败了，使用 import 导入模块的时候，模块的开头必须是 `"/", "./", or "../"` 这三种其中的一个。
+
+![单文件组件报错信息](https://img-blog.csdnimg.cn/20201110214521211.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzMwMDMzMjEz,size_16,color_FFFFFF,t_70#pic_center)
+
+我们来做一个对比，我们把使用 `vite` 创建的项目启动后， `vite-cli` 创建的项目启动后的 main.js 在浏览器响应中的区别：
+
+vite:
+
+![vite的main.js](https://img-blog.csdnimg.cn/20201110215143946.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzMwMDMzMjEz,size_16,color_FFFFFF,t_70#pic_center)
+
+vite-cli:
+
+![vite-cli的main.js](https://img-blog.csdnimg.cn/20201110215242987.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzMwMDMzMjEz,size_16,color_FFFFFF,t_70#pic_center)
+
+通过上面两幅图的对比，你会发现，vite 它会处理这个模块引入的路径，它会加载一个不存在的路径 @modules，并且请求这个路径的 js 文件也是可以请求成功的。
+
+这是 `vite` 创建的项目启动后的 vue.js 的请求，观察响应头中的 Content-Type 字段，他是 application/javascript;所以我们可以通过这个类型，在返回的时候去处理这个 js 中的第三方路劲问题。
+
+![vite中的vue.js的请求](https://img-blog.csdnimg.cn/2020111021593793.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzMwMDMzMjEz,size_16,color_FFFFFF,t_70#pic_center)
+
+## 修改第三方模块的路径
+
+通过上面的观察和理解，我们得出一个思路，可以把不是 `"/", "./", or "../"` 开头的引用，全部替换成 "/@modules/"。
+
+我们创建多一个中间件，用来做这件事情。
+
+```javascript
+// 2.修改第三方模块的路径
+app.use(async (ctx, next) => {
+  // 判断浏览器请求的文件类型，如果是js文件，在这里进行解析。
+  if (ctx.type === "application/javascript") {
+    //将流转化成字符串
+    const contents = await streamToString(ctx.body);
+    // 在js的import当中，只会出现以下的几种情况：
+    // 1、import vue from 'vue'
+    // 2、import App from '/App.vue'
+    // 3、import App from './App.vue'
+    // 4、import App from '../App.vue'
+    // 2、3、4这三种情况，现代化浏览器都可以识别，只有第一种情况不能识别，这里只处理第一种情况
+    // 思路是用正则匹配到 (from ') 或者 是 (from ") 开头，替换成"/@modules/"
+
+    /**
+     * 这里进行分组的全局匹配
+     * 第一个分组匹配以下内容：
+     *  from 匹配 from
+     *  \s+ 匹配空格
+     *  ['"]匹配单引号或者是双引号
+     * 第二个分组匹配以下内容：
+     *  ?! 不匹配这个分组的结果
+     *  \.\/ 匹配 ./
+     *  \.\.\/ 匹配 ../
+     * $1表示第一个分组的结果
+     */
+    ctx.body = contents.replace(
+      /(from\s+['"])(?![\.\/\.\.\\/])/g,
+      "$1/@modules/"
+    );
+  }
+});
+
+// 将流转化成字符串，是一个异步线程，返回一个promise
+const streamToString = (stream) =>
+  new Promise((resolve, reject) => {
+    // 用于存储读取到的buffer
+    const chunks = [];
+    //监听读取到buffer，并存储到chunks数组中
+    stream.on("data", (chunk) => chunks.push(chunk));
+    //当数据读取完毕之后，把结果返回给resolve，这里需要把读取到的buffer合并并且转换为字符串
+    stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+    //如果读取buffer失败，返回reject
+    stream.on("error", reject);
+  });
+```
 未完待续~
