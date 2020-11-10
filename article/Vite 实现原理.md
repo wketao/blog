@@ -58,7 +58,7 @@
 
   `Vite` 默认也支持 HMR 模块热更新，相对于 `Webpack` 中的 HMR 效果会更好，因为 `Webpack` 的 HMR 模块热跟新会从你修改的文件开始全部在编译一遍
 
-- vite build
+- ### vite build
 
   - Rollup
   - Dynamic import
@@ -221,4 +221,5 @@ const streamToString = (stream) =>
     stream.on("error", reject);
   });
 ```
+
 未完待续~
