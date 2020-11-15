@@ -8,7 +8,7 @@ setup 会在组件创建实例，初始化`props`后，马上被调用，如果�
 
 如果是返回一个函数，函数中也能使用当前 `setup` 函数作用域中的响应式数据，经过实验发现，`setup`返回的`vnode`会覆盖当前 `template` 中的所有的节点。
 
-setup它有两个参数：
+setup 它有两个参数：
 
 - `props`： 组件参数，需要注意的是：
   - `props`是响应式的，不要进行结构，结构后的数据就不是响应式的了。
@@ -18,7 +18,7 @@ setup它有两个参数：
   - `emit`
   - `slots`
 
-```vue
+```html
 <template>
   <h2>setup</h2>
   <p>props name:{{ name }}</p>
@@ -64,13 +64,11 @@ export default {
 </script>
 ```
 
-
-
 ### reactive
 
 接收一个普通对象返回一个响应式代理对象，等同于`vue2.x`中的`vue.observable()`
 
-```vue
+```html
 <template>
   <p>{{ object.foo }}</p>
 </template>
@@ -88,11 +86,9 @@ export default {
 </script>
 ```
 
-
-
 ### ref
 
- 接收一个普通的值返回一个响应式且可改变的ref对象，ref 对象拥有一个指向内部值的单一属性 `.value`。
+接收一个普通的值返回一个响应式且可改变的 ref 对象，ref 对象拥有一个指向内部值的单一属性 `.value`。
 
 模板中访问：当 `ref` 作为渲染上下文的属性返回（即在`setup()`返回的对象中）并在模板中使用时，它会自动解套，无需在模板内额外书写` .value`
 
@@ -100,7 +96,7 @@ export default {
 
 注意当嵌套在 reactive `Object` 中时，`ref` 才会解套。从 `Array` 或者 `Map` 等原生集合类中访问 ref 时，不会自动解套。
 
-```vue
+```html
 <template>
   <span>
     {{ count }}
@@ -129,10 +125,7 @@ export default {
   },
 };
 </script>
-
 ```
-
-
 
 ### computed
 
@@ -140,9 +133,9 @@ export default {
 
 1、传入一个`getter`函数，返回一个不可修改的`ref`对象
 
-2、传入一个拥有`get`和`set`函数的对象，返回一个可修改的状态（或者说ref）
+2、传入一个拥有`get`和`set`函数的对象，返回一个可修改的状态（或者说 ref）
 
-```vue
+```html
 <template>
   <p>{{ comput1 }}</p>
 </template>
@@ -167,10 +160,7 @@ export default {
   },
 };
 </script>
-
 ```
-
-
 
 ### watch
 
@@ -178,11 +168,11 @@ export default {
 
 - 第一个参数是侦听的数据源（一个拥有返回值的`getter`函数，也可以是`ref`）。
 - 第二个参数是数据变化处理函数。
-- 第三个参数是侦听选项，deep（深度监听）和immediate（立即执行函数）。
+- 第三个参数是侦听选项，deep（深度监听）和 immediate（立即执行函数）。
 
 `watch` 返回一个函数，用来取消监听。
 
-```vue
+```html
 <template>
   {{ count }}
   <br />
@@ -242,16 +232,13 @@ export default {
   },
 };
 </script>
-
 ```
-
-
 
 ### watchEffect
 
 `watchEffect`其内部的代码和`watch`是一样的，不同的是，`watchEffect`它会立即执行，并且他会侦听`setup`中所有的发生变化的数据（不管数据源是否是响应式的），`watchEffect`和`watch`一样，它的返回值也是一个函数，用来停止侦听。
 
-```vue
+```html
 <script>
 import { ref, reactive, watchEffect } from "vue";
 export default {
@@ -270,7 +257,6 @@ export default {
   },
 };
 </script>
-
 ```
 
 关于`watchEffect`更多的信息，查看官方文档：[https://composition-api.vuejs.org/zh/api.html#watcheffect](https://composition-api.vuejs.org/zh/api.html#watcheffect)
@@ -288,7 +274,7 @@ export default {
 - `onRenderTracked`
 - `onRenderTriggered`
 
-```vue
+```html
 <template>
   {{ count }}
 </template>
@@ -345,3 +331,6 @@ export default {
 </script>
 ```
 
+### 参考资料：
+
+[Vue 组合式 API](https://composition-api.vuejs.org/zh/)
