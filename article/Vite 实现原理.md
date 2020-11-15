@@ -131,19 +131,19 @@ npm i koa koa-send
 
 ```javascript
 #!/usr/bin/env node
-const Koa = require("koa");
-const send = require("koa-send");
+const Koa = require('koa')
+const send = require('koa-send')
 
-const app = new Koa();
+const app = new Koa()
 
 // 1.开启静态文件服务器
 app.use(async (ctx, next) => {
-  await send(ctx, ctx.path, { root: process.cwd(), index: "index.html" });
-  next();
-});
+  await send(ctx, ctx.path, { root: process.cwd(), index: 'index.html' })
+  next()
+})
 
-app.listen(3000);
-console.log("Serve running @ http://localhost:3000");
+app.listen(3000)
+console.log('Serve running @ http://localhost:3000')
 ```
 
 接着，使用 `npm link` 到全局，然后打开一个使用 vue3 写的项目（可以用 `vite` 创建一个默认项目），进入命令行终端，输入 `vite-cli`。如果没有报错的话，会打印出"Serve running @ http://localhost:3000"这句话，我们打开浏览器，打开这个网址。
@@ -178,9 +178,9 @@ vite-cli:
 // 2.修改第三方模块的路径
 app.use(async (ctx, next) => {
   // 判断浏览器请求的文件类型，如果是js文件，在这里进行解析。
-  if (ctx.type === "application/javascript") {
+  if (ctx.type === 'application/javascript') {
     //将流转化成字符串
-    const contents = await streamToString(ctx.body);
+    const contents = await streamToString(ctx.body)
     // 在js的import当中，只会出现以下的几种情况：
     // 1、import vue from 'vue'
     // 2、import App from '/App.vue'
@@ -203,23 +203,252 @@ app.use(async (ctx, next) => {
      */
     ctx.body = contents.replace(
       /(from\s+['"])(?![\.\/\.\.\\/])/g,
-      "$1/@modules/"
-    );
+      '$1/@modules/'
+    )
   }
-});
+})
 
 // 将流转化成字符串，是一个异步线程，返回一个promise
 const streamToString = (stream) =>
   new Promise((resolve, reject) => {
     // 用于存储读取到的buffer
-    const chunks = [];
+    const chunks = []
     //监听读取到buffer，并存储到chunks数组中
-    stream.on("data", (chunk) => chunks.push(chunk));
+    stream.on('data', (chunk) => chunks.push(chunk))
     //当数据读取完毕之后，把结果返回给resolve，这里需要把读取到的buffer合并并且转换为字符串
-    stream.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')))
     //如果读取buffer失败，返回reject
-    stream.on("error", reject);
-  });
+    stream.on('error', reject)
+  })
 ```
 
-未完待续~
+## 加载第三方模块
+
+现在我们要做的是，将 `/@modules/` 开头的引用，去 node_modules 中找到并且替换它的返回内容。我们需要在创建一个中间件，这个中间件需要在创建静态服务器之前被调用。
+
+```javascript
+// 3.加载第三方模块
+app.use(async (ctx, next) => {
+  // ctx.path --> /@modules/vue
+  // 判断第三方模块的路径是否有/@modules/开头
+  if (ctx.path.startsWith('/@modules/')) {
+    // 对字符串进行截取，获取到模块名称
+    const moduleName = ctx.path.substr(10)
+    // 找到该模块名称在node_moduls中的package.json路径
+    const pkgPath = path.join(
+      process.cwd(),
+      'node_modules',
+      moduleName,
+      'package.json'
+    )
+    // 通过require加载当前package.json
+    const pkg = require(pkgPath)
+    // 将内容替换成node_modules中的内容
+    ctx.path = path.join('/node_modules', moduleName, pkg.module)
+  }
+  // 返回执行下一个中间件
+  await next()
+})
+```
+
+编写完后，我们需要重新启动一下服务器，启动完成后，我们重新打开 network 网络面板，看看 vue 这个模块是否被加载了进来。
+
+![/@modules/vue](https://img-blog.csdnimg.cn/20201115131920170.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzMwMDMzMjEz,size_16,color_FFFFFF,t_70#pic_center)
+
+我们看到，vue 这个模块已经被加载进来了。
+
+但是，我们发现 /@modules/@vue/runtime-dom 和 /@modules/@vue/shared 却没有被加载进来，并且控制台却报了两个错误：加载模块 App.vue 和 index.css 失败
+
+## 编译单文件组件
+
+我们先观察一下，原本的 vite 启动后，sfc 单文件夹组件的请求是如何处理的，
+
+![vite中的sfc单文件处理](https://img-blog.csdnimg.cn/20201115134557361.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzMwMDMzMjEz,size_16,color_FFFFFF,t_70#pic_center)
+
+我们来看 app.vue 的响应内容，它引入了一些组件，然后把它编译成一个选项对象，然后它又去加载了 app.vue 并且在后面加上了一个参数 type=template，并且解构出了一个 render 函数，然后把 render 函数挂载到选项对象上，然后又设置了两个属性（这两个属性不模拟），最后导出这个选项对象。
+
+从这段代码我们可以观察到，当请求到单文件组件的时候，服务器会来编译这个单文件组件，并把相对应的结果返回给浏览器。
+
+我们在来编写一个中间件，在编写中间件的时候，我们需要安装一个模块 @vue/compiler-sfc 并且导入，这个模块的作用主要是编译单文件组件的。
+
+代码如下：
+
+```javascript
+// 4. 处理单文件组件
+app.use(async (ctx, next) => {
+  // 当请求的文件是单文件组件的时候，就是.vue结尾的时候
+  if (ctx.path.endsWith('.vue')) {
+    // 获取文件内容，它的内容是一个流，需要转换为字符串
+    const contents = await streamToString(ctx.body)
+    // compilerSFC.parse用来编译单文件组件，它返回一个对象，它有两个成员 descriptor、errors
+    const { descriptor } = compilerSFC.parse(contents)
+    // 最终返回浏览器的内容
+    let code
+    // 第一次请求，没有参数的时候，就是没有带type的时候
+    if (!ctx.query.type) {
+      // 第一次请求，把单文件组件编译成一个对象
+      code = descriptor.script.content
+      code = code.replace(/export\s+default\s+/g, 'const __script = ')
+      code += `
+        import { render as __render } from "${ctx.path}?type=template"
+        __script.render = __render
+        export default __script
+      `
+    }
+    // 第二次请求，参数中是否有type参数，并且是否是template
+    else if (ctx.query.type === 'template') {
+      // compilerSFC.compileTemplate 编译模板
+      const templateRender = compilerSFC.compileTemplate({
+        // 编译内容
+        source: descriptor.template.content,
+      })
+      code = templateRender.code
+    }
+    // 设置文件类型
+    ctx.type = 'application/javascript'
+    // 转化成流
+    ctx.body = stringToStream(code)
+  }
+  await next()
+})
+```
+
+然后，重启一下服务，需要注意的是，需要把图片和其他和 js 或者 vue 无关的文件都注释掉，因为我们这里只处理了 vue 文件。
+
+[vite-cli 运行结果](https://img-blog.csdnimg.cn/20201115141848545.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzMwMDMzMjEz,size_16,color_FFFFFF,t_70#pic_center)
+
+## 源码
+
+```javascript
+#!/usr/bin/env node
+const path = require('path')
+const { Readable } = require('stream')
+const Koa = require('koa')
+const send = require('koa-send')
+const compilerSFC = require('@vue/compiler-sfc')
+
+const app = new Koa()
+
+// 3.加载第三方模块
+app.use(async (ctx, next) => {
+  // ctx.path --> /@modules/vue
+  // 判断第三方模块的路径是否有/@modules/开头
+  if (ctx.path.startsWith('/@modules/')) {
+    // 对字符串进行截取，获取到模块名称
+    const moduleName = ctx.path.substr(10)
+    // 找到该模块名称在node_moduls中的package.json路径
+    const pkgPath = path.join(
+      process.cwd(),
+      'node_modules',
+      moduleName,
+      'package.json'
+    )
+    // 通过require加载当前package.json
+    const pkg = require(pkgPath)
+    // 将内容替换成node_modules中的内容
+    ctx.path = path.join('/node_modules', moduleName, pkg.module)
+  }
+  await next()
+})
+
+// 1.开启静态文件服务器
+app.use(async (ctx, next) => {
+  await send(ctx, ctx.path, { root: process.cwd(), index: 'index.html' })
+  await next()
+})
+
+// 4. 处理单文件组件
+app.use(async (ctx, next) => {
+  // 当请求的文件是单文件组件的时候，就是.vue结尾的时候
+  if (ctx.path.endsWith('.vue')) {
+    // 获取文件内容，它的内容是一个流，需要转换为字符串
+    const contents = await streamToString(ctx.body)
+    // compilerSFC.parse用来编译单文件组件，它返回一个对象，它有两个成员 descriptor、errors
+    const { descriptor } = compilerSFC.parse(contents)
+    // 最终返回浏览器的内容
+    let code
+    // 第一次请求，没有参数的时候，就是没有带type的时候
+    if (!ctx.query.type) {
+      // 第一次请求，把单文件组件编译成一个对象
+      code = descriptor.script.content
+      code = code.replace(/export\s+default\s+/g, 'const __script = ')
+      code += `
+        import { render as __render } from "${ctx.path}?type=template"
+        __script.render = __render
+        export default __script
+      `
+    }
+    // 第二次请求，参数中是否有type参数，并且是否是template
+    else if (ctx.query.type === 'template') {
+      // compilerSFC.compileTemplate 编译模板
+      const templateRender = compilerSFC.compileTemplate({
+        // 编译内容
+        source: descriptor.template.content,
+      })
+      code = templateRender.code
+    }
+    // 设置文件类型
+    ctx.type = 'application/javascript'
+    // 转化成流
+    ctx.body = stringToStream(code)
+  }
+  await next()
+})
+
+// 2.修改第三方模块的路径
+app.use(async (ctx, next) => {
+  // 判断浏览器请求的文件类型，如果是js文件，在这里进行解析。
+  if (ctx.type === 'application/javascript') {
+    //将流转化成字符串
+    const contents = await streamToString(ctx.body)
+    // 在js的import当中，只会出现以下的几种情况：
+    // 1、import vue from 'vue'
+    // 2、import App from '/App.vue'
+    // 3、import App from './App.vue'
+    // 4、import App from '../App.vue'
+    // 2、3、4这三种情况，现代化浏览器都可以识别，只有第一种情况不能识别，这里只处理第一种情况
+    // 思路是用正则匹配到 (from ') 或者 是 (from ") 开头，替换成"/@modules/"
+
+    /**
+     * 这里进行分组的全局匹配
+     * 第一个分组匹配以下内容：
+     *  from 匹配 from
+     *  \s+ 匹配空格
+     *  ['"]匹配单引号或者是双引号
+     * 第二个分组匹配以下内容：
+     *  ?! 不匹配这个分组的结果
+     *  \.\/ 匹配 ./
+     *  \.\.\/ 匹配 ../
+     * $1表示第一个分组的结果
+     */
+    ctx.body = contents
+      .replace(/(from\s+['"])(?![\.\/\.\.\\/])/g, '$1/@modules/')
+      .replace(/process\.env\.NODE_ENV/g, '"development"') // 替换process对象
+  }
+})
+
+// 将流转化成字符串，是一个异步线程，返回一个promise
+const streamToString = (stream) =>
+  new Promise((resolve, reject) => {
+    // 用于存储读取到的buffer
+    const chunks = []
+    //监听读取到buffer，并存储到chunks数组中
+    stream.on('data', (chunk) => chunks.push(chunk))
+    //当数据读取完毕之后，把结果返回给resolve，这里需要把读取到的buffer合并并且转换为字符串
+    stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')))
+    //如果读取buffer失败，返回reject
+    stream.on('error', reject)
+  })
+
+// 将字符串转化成流
+const stringToStream = (text) => {
+  const stream = new Readable()
+  stream.push(text)
+  stream.push(null)
+  return stream
+}
+
+app.listen(3000)
+console.log('Serve running @ http://localhost:3000')
+
+```
