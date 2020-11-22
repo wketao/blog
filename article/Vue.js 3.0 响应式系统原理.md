@@ -16,10 +16,6 @@ vue.js 响应式回顾
 - track
 - trigger
 
-# Proxy 对象的回顾
-
-待续~
-
 # 模拟 reactive 的实现
 
 **reactive**
@@ -295,4 +291,119 @@ export function trigger(target, key) {
 > 12000
 > 4000
 
-未完待续~
+# ref 实现
+
+我们之前已经实现了 `reactive` 函数 ，它可以实现响应式的对象，那下面我们在来创建一个响应式对象 `ref`。
+
+这个函数接收一个参数，可以是原始值，也可以是对象。如果是对象的话并且是 ref 创建的响应式对象，那么直接返回。如果是普通对象的话，那么直接调用 `reactive` 函数来创建响应式对象。否则的话，只创建一个只有 value 属性的对象。
+
+代码如下：
+
+```javascript
+export function ref(raw) {
+  // 判断 raw 是不是 ref 创建的对象，如果是的话直接返回
+  if (isObject(raw) && raw.__v_isRef) {
+    return
+  }
+
+  // 判断是否是对象，如果是对象，创建一个响应式对象，否则只返回一个原始值
+  let value = convert(raw)
+
+  // 不管value是什么类型的值，都要创建一个ref的对象
+  const r = {
+    // ref 对象 特有的属性，这个属性和Vue3源码中是一样的
+    __v_isRef: true,
+    // 获取 value
+    get value() {
+      //收集依赖
+      track(r, 'value')
+      //返回该值
+      return value
+    },
+    // 设置 value
+    set value(newValue) {
+      // 判断新旧的值是否不相等
+      if (newValue !== value) {
+        // 这里要注意，要把 newValue 赋值给 raw，要把原来的 raw 替换掉
+        raw = newValue
+        value = convert(raw)
+        // 触发更新
+        trigger(r, 'value')
+      }
+    },
+  }
+
+  return r
+}
+```
+
+# toRefs
+
+接下来，我们再来实现 `toRefs` 这个方法，这个方法的作用是：接收一个 `reactive` 返回的响应式对象（也就是一个 `proxy` 对象），如果传入的参数不是 `reactive` 创建的对象直接返回。如果是 `reactive` 创建的对象，把传入的属性全部转换为类似于 `ref` 返回的对象。把转换后的属性挂载到一个新的对象上返回。
+
+代码如下：
+
+```javascript
+/**
+ * toRefs 函数
+ * @param {object} proxy reactive创建的响应式对象
+ */
+export function toRefs(proxy) {
+  // 1、判断是否是 reactive 创建的对象，如果不是，直接返回
+  // 第一步跳过，因为我们在创建reactive对象的时候，没有创建表示
+
+  // 创建一个ret的对象，如果这个对象是数组的话，创建一个长度是proxy.length的数组，如果不是的话，默认一个空对象。
+  // 因为 proxy 这个参数，有可能是响应式数组，也有可能是响应式对象。
+  const ret = proxy instanceof Array ? new Array(proxy.length) : {}
+
+  //循环遍历所有属性，把每个属性都转换成类似于ref创建的对象
+  for (const key in proxy) {
+    ret[key] = toProxyRef(proxy, key)
+  }
+  return ret
+}
+
+/**
+ * 响应式对象
+ * @param {object} proxy 响应式对象
+ * @param {strig} key 属性名称
+ */
+function toProxyRef(proxy, key) {
+  const r = {
+    __v_isRef: true,
+    get value() {
+      // 这里不需要在收集依赖了，因为在reactive中读取属性时，自动收集了依赖了。
+      return proxy[key]
+    },
+    set value(newValue) {
+      // 这里不需要在触发更新了，因为在reactive中设置属性时，设置了触发更新。
+      proxy[key] = newValue
+    },
+  }
+  return r
+}
+```
+
+# computed
+
+最后，我们来实现 `computed` 这个方法，它需要接收一个有返回值的函数作为参数，这个参数的返回值就是计算属性的值，并且需要监听这个函数内部数据的响应式的变化，最后把这个函数执行的结果返回。
+
+代码如下：
+
+```javascript
+/**
+ * 计算属性computed
+ * @param {function} getter 计算属性的结果函数
+ */
+export function computed(getter) {
+  //这个函数最终需要返回一个ref创建的对象
+  //创建一个空的 ref 对象，它的value就是undefined
+  const result = ref()
+
+  // 收集依赖，在 effect 中返回属性时，会去收集依赖。
+  // 当数据变化时，会重新执行 effect 函数
+  effect(() => (result.value = getter()))
+
+  return result
+}
+```
