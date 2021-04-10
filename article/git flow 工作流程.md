@@ -115,3 +115,17 @@ git push origin 1.0.0
 - git flow违反了“短命”分支规则
 - git flow也无法在 monorepo中 使用。
 - 关于更多的说明，请查看参考资料第四点。
+
+## 参考资料
+
+[Understanding the GitHub flow](https://guides.github.com/introduction/flow/index.html)
+
+[Introduction to GitLab Flow](https://docs.gitlab.com/ee/topics/gitlab_flow.html)
+
+[一文弄懂 Gitflow、Github flow、Gitlab flow 的工作流](https://cloud.tencent.com/developer/article/1646937)
+
+[Please stop recommending Git Flow!](https://georgestocker.com/2020/03/04/please-stop-recommending-git-flow/)
+
+[在阿里，我们如何管理代码分支？](https://developer.aliyun.com/article/573549)
+
+[字节研发设施下的 Git 工作流](https://juejin.cn/post/6875874533228838925#heading-5)
